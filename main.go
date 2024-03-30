@@ -30,6 +30,8 @@ func main() {
 		line = strings.TrimSpace(line)
 
 		switch {
+		case line == "":
+			continue
 		case strings.HasPrefix(line, "goos: "):
 			inf.os = strings.TrimPrefix(line, "goos: ")
 		case strings.HasPrefix(line, "goarch: "):
