@@ -1,13 +1,8 @@
-package main
+package benchtime
 
 import (
-	"flag"
 	"fmt"
 	"log"
-	"os"
-	"os/user"
-	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 )
@@ -37,31 +32,10 @@ type run struct {
 	allocations uint64  // Allocations per operation.
 }
 
-func main() {
-	flag.Parse()
-	for _, path := range flag.Args() {
-		var err error
-		path, err = cleanPath(path)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		var src []byte
-		src, err = os.ReadFile(path)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		Process(string(src))
-	}
-}
-
-func Process(testData string) {
+func Calculate(benchmarkData string) {
 	inf := info{benchmarks: map[string]benchmark{}}
 	var maxNameLen int
-	for _, line := range strings.Split(testData, "\n") {
+	for _, line := range strings.Split(benchmarkData, "\n") {
 		line = strings.TrimSpace(line)
 
 		switch {
@@ -161,18 +135,4 @@ func (bench *benchmark) Calc() {
 
 func Heading(l int) {
 	fmt.Printf("%-*s\tmax\tmin\tavg\ttotal\n", l, " ")
-}
-
-func cleanPath(filePath string) (_ string, err error) {
-	const homeDir = "~"
-	if strings.HasPrefix(filePath, homeDir) && runtime.GOOS == "linux" {
-		var usr *user.User
-		usr, err = user.Current()
-		if err != nil {
-			return
-		}
-		filePath = strings.Replace(filePath, homeDir, usr.HomeDir, 1)
-	}
-
-	return filepath.Abs(filePath)
 }
