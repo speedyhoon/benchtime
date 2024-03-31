@@ -1,6 +1,6 @@
 # benchtime
 
-A commandline tool to compare several benchmarks against each other. Handy for determining when function is the most performant.
+A commandline tool to compare several [Go](https://go.dev/) benchmarks against each other. Handy for determining which function is the most performant.
 
 If you want to compare the same benchmark between different versions use [`benchstat`](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat) or [`benchmany`](https://pkg.go.dev/github.com/aclements/go-misc/benchmany) for running Go benchmarks across many git commits.
 
@@ -16,14 +16,11 @@ go test -bench . -benchmem -shuffle on -count 20 | benchtime -i
 
 ### Benchmark Data file
 
-Generate some benchmark data to `bench.log` file:
-
-```shell
-go test -bench . -benchmem -shuffle on -count 20 > bench.log
-```
-
-Process the benchmark data in `bench.log`:
-
-```shell
-benchtime bench.log
-```
+1. Generate some benchmark data to `bench.log` file:
+   ```shell
+   go test -bench . -benchmem -shuffle on -count 20 > bench.log
+   ```
+2. Then process the benchmark data in `bench.log`:
+   ```shell
+   benchtime bench.log
+   ```
