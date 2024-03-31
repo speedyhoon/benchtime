@@ -1,8 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/user"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -12,11 +17,20 @@ type info struct {
 	arch       string
 	pkg        string
 	cpu        string
-	benchmarks map[string][]benchmark
+	benchmarks map[string]benchmark
 }
 
 type benchmark struct {
 	name        string
+	runs        []run
+	timeMaximum float64
+	TimeMinimum float64
+	timeMedian  float64
+	timeAverage float64
+	timeTotal   float64
+}
+
+type run struct {
 	runs        uint64
 	nanoseconds float64 // Per operation.
 	bytes       uint64  // Bytes per operation.
@@ -24,9 +38,30 @@ type benchmark struct {
 }
 
 func main() {
-	var inf info
-	lines := strings.Split(testData, "\n")
-	for _, line := range lines {
+	flag.Parse()
+	for _, path := range flag.Args() {
+		var err error
+		path, err = cleanPath(path)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		var src []byte
+		src, err = os.ReadFile(path)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		Process(string(src))
+	}
+}
+
+func Process(testData string) {
+	inf := info{benchmarks: map[string]benchmark{}}
+	var maxNameLen int
+	for _, line := range strings.Split(testData, "\n") {
 		line = strings.TrimSpace(line)
 
 		switch {
@@ -40,11 +75,11 @@ func main() {
 			inf.pkg = strings.TrimPrefix(line, "pkg: ")
 		case strings.HasPrefix(line, "cpu: "):
 			inf.cpu = strings.TrimPrefix(line, "cpu: ")
-		case strings.EqualFold(line, "PASS"), strings.HasPrefix(line, "ok "):
-			// Ignore line
+		case ignoreLine(line):
 		default:
 			data := strings.Split(line, "  ")
 			var bench benchmark
+			var r run
 			var err error
 			for _, item := range data {
 				item = strings.TrimSpace(item)
@@ -55,35 +90,89 @@ func main() {
 				switch {
 				case strings.HasPrefix(item, "Benchmark"):
 					bench.name = item
+					maxNameLen = max(maxNameLen, len(item))
 					err = nil
 				case strings.HasSuffix(item, " ns/op"):
 					item = strings.TrimSuffix(item, " ns/op")
-					bench.nanoseconds, err = strconv.ParseFloat(item, 64)
+					r.nanoseconds, err = strconv.ParseFloat(item, 64)
 				case strings.HasSuffix(item, " B/op"):
 					item = strings.TrimSuffix(item, " B/op")
-					bench.bytes, err = strconv.ParseUint(item, 10, 64)
+					r.bytes, err = strconv.ParseUint(item, 10, 64)
 				case strings.HasSuffix(item, " allocs/op"):
 					item = strings.TrimSuffix(item, " allocs/op")
-					bench.allocations, err = strconv.ParseUint(item, 10, 64)
+					r.allocations, err = strconv.ParseUint(item, 10, 64)
 				default:
-					bench.runs, err = strconv.ParseUint(item, 10, 64)
+					r.runs, err = strconv.ParseUint(item, 10, 64)
 				}
 				if err != nil {
 					log.Println(err)
 				}
 			}
-			if len(inf.benchmarks) == 0 {
-				inf.benchmarks = make(map[string][]benchmark)
-			}
-			inf.benchmarks[bench.name] = append(inf.benchmarks[bench.name], bench)
+
+			inf.Add(bench, r)
 		}
 	}
 
-	fmt.Println(inf.os)
-	fmt.Println(inf.arch)
-	fmt.Println(inf.pkg)
-	fmt.Println(inf.cpu)
+	fmt.Println("arch:", inf.arch)
+	fmt.Println("os:", inf.os)
+	fmt.Println("pkg:", inf.pkg)
+	fmt.Println("cpu:", inf.cpu)
+	Heading(maxNameLen)
 	for _, benchmarks := range inf.benchmarks {
-		fmt.Println(benchmarks[0].name, benchmarks[0].nanoseconds, benchmarks[0].bytes, benchmarks[0].allocations)
+		benchmarks.Calc()
+
+		// %-*s	= right padding spaces to `maxNameLen`.
+		// %.3f	= truncate float 3 decimal places.
+		fmt.Printf("%-*s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%d\t%d\n", maxNameLen, benchmarks.name, benchmarks.timeMaximum, benchmarks.TimeMinimum, benchmarks.timeAverage, benchmarks.timeTotal, benchmarks.runs[0].nanoseconds, benchmarks.runs[0].bytes, benchmarks.runs[0].allocations)
 	}
+}
+
+func ignoreLine(line string) bool {
+	return strings.EqualFold(line, "PASS") ||
+		strings.HasPrefix(line, "ok ") ||
+		strings.HasPrefix(line, "-test.shuffle ")
+}
+
+func (inf *info) Add(bench benchmark, r run) {
+	b, ok := inf.benchmarks[bench.name]
+	if ok {
+		b.runs = append(b.runs, r)
+		b.timeMaximum = max(b.timeMaximum, r.nanoseconds)
+		b.TimeMinimum = min(b.TimeMinimum, r.nanoseconds)
+		inf.benchmarks[bench.name] = b
+	} else {
+		bench.runs = []run{r}
+		bench.timeMaximum = r.nanoseconds
+		bench.TimeMinimum = r.nanoseconds
+		inf.benchmarks[bench.name] = bench
+	}
+}
+
+func (bench *benchmark) Calc() {
+	if len(bench.runs) == 0 {
+		return
+	}
+
+	for _, r := range bench.runs {
+		bench.timeTotal += r.nanoseconds
+	}
+	bench.timeAverage = bench.timeTotal / float64(len(bench.runs))
+}
+
+func Heading(l int) {
+	fmt.Printf("%-*s\tmax\tmin\tavg\ttotal\n", l, " ")
+}
+
+func cleanPath(filePath string) (_ string, err error) {
+	const homeDir = "~"
+	if strings.HasPrefix(filePath, homeDir) && runtime.GOOS == "linux" {
+		var usr *user.User
+		usr, err = user.Current()
+		if err != nil {
+			return
+		}
+		filePath = strings.Replace(filePath, homeDir, usr.HomeDir, 1)
+	}
+
+	return filepath.Abs(filePath)
 }
