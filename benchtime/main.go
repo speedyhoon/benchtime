@@ -14,11 +14,20 @@ import (
 )
 
 func main() {
-	const flagStdIn = "i"
-	readStdIn := flag.Bool(flagStdIn, false, "read from standard input (stdin).")
+	version := flag.Bool("v", false, "Print version & exit.")
+	flag.Usage = func() {
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s: [files...]\n", os.Args[0])
+		flag.PrintDefaults()
+		_, _ = fmt.Fprintln(flag.CommandLine.Output(), "\nIf no files are specified as arguments then benchtime reads stdin for input.")
+	}
 	flag.Parse()
+	if *version {
+		fmt.Println("0.1")
+		return
+	}
 
-	if *readStdIn {
+	paths := flag.Args()
+	if len(paths) == 0 {
 		var stdin []byte
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
@@ -30,12 +39,6 @@ func main() {
 		}
 
 		benchtime.Calculate(string(stdin))
-		return
-	}
-
-	paths := flag.Args()
-	if len(paths) == 0 {
-		_, _ = fmt.Fprintf(os.Stderr, "no paths specified or standard input flag -%s\n", flagStdIn)
 		return
 	}
 

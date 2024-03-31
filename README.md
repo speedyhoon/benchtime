@@ -11,7 +11,7 @@ If you want to compare the same benchmark between different versions use [`bench
 Pipe the standard output from `go test` directly into `benchtime`.
 
 ```shell
-go test -bench . -benchmem -shuffle on -count 20 | benchtime -i
+go test -bench . -benchmem -shuffle on -count 20 | benchtime
 ```
 
 ### Benchmark Data file
