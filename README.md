@@ -17,10 +17,16 @@ go test -bench . -benchmem -shuffle on -count 20 | benchtime
 ### Benchmark Data file
 
 1. Generate some benchmark data to `bench.log` file:
-   ```shell
-   go test -bench . -benchmem -shuffle on -count 20 > bench.log
-   ```
+	```shell
+	go test -bench . -benchmem -shuffle on -count 20 > bench.log
+	```
 2. Then process the benchmark data in `bench.log`:
-   ```shell
-   benchtime bench.log
-   ```
+	```shell
+	benchtime bench.log
+	```
+
+## Install
+
+```shell
+go install github.com/speedyhoon/benchtime/benchtime@latest
+```
