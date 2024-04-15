@@ -15,6 +15,8 @@ import (
 
 func main() {
 	version := flag.Bool("v", false, "Print version & exit.")
+	const decimalPlacesMax = 40
+	decimalPlaces := flag.Uint("d", 3, fmt.Sprintf("Decimal places. Maximum is %d.", decimalPlacesMax))
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s: [files...]\n", os.Args[0])
 		flag.PrintDefaults()
@@ -22,9 +24,11 @@ func main() {
 	}
 	flag.Parse()
 	if *version {
-		fmt.Println("0.1")
+		fmt.Println("0.2")
 		return
 	}
+
+	*decimalPlaces = min(*decimalPlaces, decimalPlacesMax)
 
 	paths := flag.Args()
 	if len(paths) == 0 {
@@ -38,7 +42,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		benchtime.Calculate(string(stdin))
+		benchtime.Calculate(string(stdin), *decimalPlaces)
 		return
 	}
 
@@ -57,7 +61,7 @@ func main() {
 			continue
 		}
 
-		benchtime.Calculate(string(src))
+		benchtime.Calculate(string(src), *decimalPlaces)
 	}
 }
 
