@@ -33,7 +33,7 @@ type run struct {
 	allocations uint64  // Allocations per operation.
 }
 
-func Calculate(benchmarkData string) {
+func Calculate(benchmarkData string, decimalPlaces uint) {
 	inf := info{benchmarks: map[string]*benchmark{}}
 	var maxNameLen int
 	for _, line := range strings.Split(benchmarkData, "\n") {
@@ -94,9 +94,8 @@ func Calculate(benchmarkData string) {
 	fmt.Println("cpu:", inf.cpu)
 
 	var decimalWidth int
-	var DecimalPlaces = 3
-	if DecimalPlaces != 0 {
-		decimalWidth = DecimalPlaces + 1
+	if decimalPlaces != 0 {
+		decimalWidth = int(decimalPlaces) + 1 // Add +1  for the width of the decimal points "."
 	}
 
 	c := columnWidths{
@@ -118,10 +117,10 @@ func Calculate(benchmarkData string) {
 		// %*.*f	= left pad the float up to X spaces, then truncate float to X decimal places.
 		fmt.Printf("%-*s  %*.*f  %*.*f  %*.*f  %*.*f  %*d  %*d\n",
 			maxNameLen, benchmarks.name,
-			c.maximum, DecimalPlaces, benchmarks.timeMaximum,
-			c.minimum, DecimalPlaces, benchmarks.TimeMinimum,
-			c.average, DecimalPlaces, benchmarks.timeAverage,
-			c.total, DecimalPlaces, benchmarks.timeTotal,
+			c.maximum, decimalPlaces, benchmarks.timeMaximum,
+			c.minimum, decimalPlaces, benchmarks.TimeMinimum,
+			c.average, decimalPlaces, benchmarks.timeAverage,
+			c.total, decimalPlaces, benchmarks.timeTotal,
 			c.bytes, benchmarks.runs[0].bytes,
 			c.allocations, benchmarks.runs[0].allocations,
 		)
