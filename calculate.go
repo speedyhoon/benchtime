@@ -3,6 +3,7 @@ package benchtime
 import (
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -12,7 +13,7 @@ type info struct {
 	arch       string
 	pkg        string
 	cpu        string
-	benchmarks map[string]benchmark
+	benchmarks map[string]*benchmark
 }
 
 type benchmark struct {
@@ -33,7 +34,7 @@ type run struct {
 }
 
 func Calculate(benchmarkData string) {
-	inf := info{benchmarks: map[string]benchmark{}}
+	inf := info{benchmarks: map[string]*benchmark{}}
 	var maxNameLen int
 	for _, line := range strings.Split(benchmarkData, "\n") {
 		line = strings.TrimSpace(line)
@@ -91,13 +92,39 @@ func Calculate(benchmarkData string) {
 	fmt.Println("os:", inf.os)
 	fmt.Println("pkg:", inf.pkg)
 	fmt.Println("cpu:", inf.cpu)
-	Heading(maxNameLen)
+
+	var decimalWidth int
+	var DecimalPlaces = 3
+	if DecimalPlaces != 0 {
+		decimalWidth = DecimalPlaces + 1
+	}
+
+	c := columnWidths{
+		maximum:     max(len(ColMax), decimalWidth),
+		minimum:     max(len(ColMin), decimalWidth),
+		average:     max(len(ColAvg), decimalWidth),
+		total:       max(len(ColTotal), decimalWidth),
+		bytes:       len(ColBytesPerOp),
+		allocations: len(ColAllocationsPerOp),
+	}
 	for _, benchmarks := range inf.benchmarks {
 		benchmarks.Calc()
+		c.ColumnSizes(*benchmarks, decimalWidth)
+	}
+	Heading(c, maxNameLen)
 
+	for _, benchmarks := range inf.benchmarks {
 		// %-*s	= right padding spaces to `maxNameLen`.
-		// %.3f	= truncate float 3 decimal places.
-		fmt.Printf("%-*s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%d\t%d\n", maxNameLen, benchmarks.name, benchmarks.timeMaximum, benchmarks.TimeMinimum, benchmarks.timeAverage, benchmarks.timeTotal, benchmarks.runs[0].nanoseconds, benchmarks.runs[0].bytes, benchmarks.runs[0].allocations)
+		// %*.*f	= left pad the float up to X spaces, then truncate float to X decimal places.
+		fmt.Printf("%-*s  %*.*f  %*.*f  %*.*f  %*.*f  %*d  %*d\n",
+			maxNameLen, benchmarks.name,
+			c.maximum, DecimalPlaces, benchmarks.timeMaximum,
+			c.minimum, DecimalPlaces, benchmarks.TimeMinimum,
+			c.average, DecimalPlaces, benchmarks.timeAverage,
+			c.total, DecimalPlaces, benchmarks.timeTotal,
+			c.bytes, benchmarks.runs[0].bytes,
+			c.allocations, benchmarks.runs[0].allocations,
+		)
 	}
 }
 
@@ -118,7 +145,7 @@ func (inf *info) Add(bench benchmark, r run) {
 		bench.runs = []run{r}
 		bench.timeMaximum = r.nanoseconds
 		bench.TimeMinimum = r.nanoseconds
-		inf.benchmarks[bench.name] = bench
+		inf.benchmarks[bench.name] = &bench
 	}
 }
 
@@ -133,6 +160,45 @@ func (bench *benchmark) Calc() {
 	bench.timeAverage = bench.timeTotal / float64(len(bench.runs))
 }
 
-func Heading(l int) {
-	fmt.Printf("%-*s\tmax\tmin\tavg\ttotal\n", l, " ")
+type columnWidths struct {
+	total, minimum, maximum, average, bytes, allocations int
+}
+
+func (c *columnWidths) ColumnSizes(bench benchmark, decimalWidth int) {
+	c.total = max(c.total, size(uint64(bench.timeTotal))+decimalWidth)
+	c.minimum = max(c.minimum, size(uint64(bench.TimeMinimum))+decimalWidth)
+	c.maximum = max(c.maximum, size(uint64(bench.timeMaximum))+decimalWidth)
+	c.average = max(c.average, size(uint64(bench.timeAverage))+decimalWidth)
+	c.bytes = max(c.bytes, size(bench.runs[0].bytes))
+	c.allocations = max(c.allocations, size(bench.runs[0].allocations))
+}
+
+func Heading(c columnWidths, l int) {
+	fmt.Printf("%-*s  %*s  %*s  %*s  %*s  %*s  %*s\n",
+		l, " ",
+		c.maximum, ColMax,
+		c.minimum, ColMin,
+		c.average, ColAvg,
+		c.total, ColTotal,
+		c.bytes, ColBytesPerOp,
+		c.allocations, ColAllocationsPerOp,
+	)
+}
+
+// Column names
+var (
+	ColMax              = "max"
+	ColMin              = "min"
+	ColAvg              = "avg"
+	ColTotal            = "total"
+	ColBytesPerOp       = "B/op"
+	ColAllocationsPerOp = "allocs/op"
+)
+
+func size(f uint64) (count int) {
+	if f < 10 {
+		return 1
+	}
+	count = int(math.Log10(float64(f))) + 1
+	return
 }
