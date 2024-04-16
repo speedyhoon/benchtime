@@ -24,7 +24,7 @@ func main() {
 	}
 	flag.Parse()
 	if *version {
-		fmt.Println("0.2")
+		fmt.Println("0.3")
 		return
 	}
 
@@ -42,7 +42,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		benchtime.Calculate(string(stdin), *decimalPlaces)
+		fmt.Println(benchtime.Calculate(string(stdin), *decimalPlaces))
 		return
 	}
 
@@ -61,7 +61,7 @@ func main() {
 			continue
 		}
 
-		benchtime.Calculate(string(src), *decimalPlaces)
+		fmt.Println(benchtime.Calculate(string(src), *decimalPlaces))
 	}
 }
 

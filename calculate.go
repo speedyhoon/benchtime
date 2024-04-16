@@ -1,8 +1,8 @@
 package benchtime
 
 import (
+	"bytes"
 	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -33,8 +33,9 @@ type run struct {
 	allocations uint64  // Allocations per operation.
 }
 
-func Calculate(benchmarkData string, decimalPlaces uint) {
+func Calculate(benchmarkData string, decimalPlaces uint) string {
 	inf := info{benchmarks: map[string]*benchmark{}}
+	var buf = bytes.NewBuffer(nil)
 	var maxNameLen int
 	for _, line := range strings.Split(benchmarkData, "\n") {
 		line = strings.TrimSpace(line)
@@ -80,7 +81,7 @@ func Calculate(benchmarkData string, decimalPlaces uint) {
 					r.runs, err = strconv.ParseUint(item, 10, 64)
 				}
 				if err != nil {
-					log.Println(err)
+					buf.WriteString(err.Error() + "\n")
 				}
 			}
 
@@ -88,10 +89,7 @@ func Calculate(benchmarkData string, decimalPlaces uint) {
 		}
 	}
 
-	fmt.Println("arch:", inf.arch)
-	fmt.Println("os:", inf.os)
-	fmt.Println("pkg:", inf.pkg)
-	fmt.Println("cpu:", inf.cpu)
+	buf.WriteString(fmt.Sprintf("arch: %s\nos: %s\npkg: %s\ncpu: %s\n", inf.arch, inf.os, inf.pkg, inf.cpu))
 
 	var decimalWidth int
 	if decimalPlaces != 0 {
@@ -110,12 +108,12 @@ func Calculate(benchmarkData string, decimalPlaces uint) {
 		benchmarks.Calc()
 		c.ColumnSizes(*benchmarks, decimalWidth)
 	}
-	Heading(c, maxNameLen)
+	Heading(buf, c, maxNameLen)
 
 	for _, benchmarks := range inf.benchmarks {
 		// %-*s	= right padding spaces to `maxNameLen`.
 		// %*.*f	= left pad the float up to X spaces, then truncate float to X decimal places.
-		fmt.Printf("%-*s  %*.*f  %*.*f  %*.*f  %*.*f  %*d  %*d\n",
+		buf.WriteString(fmt.Sprintf("%-*s  %*.*f  %*.*f  %*.*f  %*.*f  %*d  %*d\n",
 			maxNameLen, benchmarks.name,
 			c.maximum, decimalPlaces, benchmarks.timeMaximum,
 			c.minimum, decimalPlaces, benchmarks.TimeMinimum,
@@ -123,8 +121,10 @@ func Calculate(benchmarkData string, decimalPlaces uint) {
 			c.total, decimalPlaces, benchmarks.timeTotal,
 			c.bytes, benchmarks.runs[0].bytes,
 			c.allocations, benchmarks.runs[0].allocations,
-		)
+		))
 	}
+
+	return buf.String()
 }
 
 func ignoreLine(line string) bool {
@@ -172,8 +172,8 @@ func (c *columnWidths) ColumnSizes(bench benchmark, decimalWidth int) {
 	c.allocations = max(c.allocations, size(bench.runs[0].allocations))
 }
 
-func Heading(c columnWidths, l int) {
-	fmt.Printf("%-*s  %*s  %*s  %*s  %*s  %*s  %*s\n",
+func Heading(b *bytes.Buffer, c columnWidths, l int) {
+	b.WriteString(fmt.Sprintf("%-*s  %*s  %*s  %*s  %*s  %*s  %*s\n",
 		l, " ",
 		c.maximum, ColMax,
 		c.minimum, ColMin,
@@ -181,7 +181,7 @@ func Heading(c columnWidths, l int) {
 		c.total, ColTotal,
 		c.bytes, ColBytesPerOp,
 		c.allocations, ColAllocationsPerOp,
-	)
+	))
 }
 
 // Column names
