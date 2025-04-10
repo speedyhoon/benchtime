@@ -93,7 +93,7 @@ func Calculate(benchmarkData string, decimalPlaces uint) string {
 
 	var decimalWidth int
 	if decimalPlaces != 0 {
-		decimalWidth = int(decimalPlaces) + 1 // Add +1  for the width of the decimal points "."
+		decimalWidth = int(decimalPlaces) + 1 // Add +1 for the width of the decimal points "."
 	}
 
 	c := columnWidths{
@@ -130,7 +130,8 @@ func Calculate(benchmarkData string, decimalPlaces uint) string {
 func ignoreLine(line string) bool {
 	return strings.EqualFold(line, "PASS") ||
 		strings.HasPrefix(line, "ok ") ||
-		strings.HasPrefix(line, "-test.shuffle ")
+		strings.HasPrefix(line, "-test.shuffle ") ||
+		strings.HasPrefix(line, "Benchmarking ")
 }
 
 func (inf *info) Add(bench benchmark, r run) {
