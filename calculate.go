@@ -4,8 +4,18 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
+)
+
+const (
+	SortNameAscending uint8 = iota
+	SortNameDescending
+	SortTimeAverage
+	SortTimeMaximum
+	SortTimeMinimum
+	SortTimeTotal
 )
 
 type info struct {
@@ -13,7 +23,7 @@ type info struct {
 	arch       string
 	pkg        string
 	cpu        string
-	benchmarks map[string]*benchmark
+	benchmarks []*benchmark
 }
 
 type benchmark struct {
@@ -21,7 +31,6 @@ type benchmark struct {
 	runs        []run
 	timeMaximum float64
 	TimeMinimum float64
-	timeMedian  float64
 	timeAverage float64
 	timeTotal   float64
 }
@@ -33,8 +42,8 @@ type run struct {
 	allocations uint64  // Allocations per operation.
 }
 
-func Calculate(benchmarkData string, decimalPlaces uint) string {
-	inf := info{benchmarks: map[string]*benchmark{}}
+func Calculate(benchmarkData string, decimalPlaces uint, sortColumn uint8) string {
+	inf := info{benchmarks: []*benchmark{}}
 	var buf = bytes.NewBuffer(nil)
 	var maxNameLen int
 	for _, line := range strings.Split(benchmarkData, "\n") {
@@ -109,6 +118,7 @@ func Calculate(benchmarkData string, decimalPlaces uint) string {
 	}
 	Heading(buf, c, maxNameLen)
 
+	inf.Sort(sortColumn)
 	for _, benchmarks := range inf.benchmarks {
 		// %-*s	= right padding spaces to `maxNameLen`.
 		// %*.*f	= left pad the float up to X spaces, then truncate float to X decimal places.
@@ -134,18 +144,21 @@ func ignoreLine(line string) bool {
 }
 
 func (inf *info) Add(bench benchmark, r run) {
-	b, ok := inf.benchmarks[bench.name]
-	if ok {
-		b.runs = append(b.runs, r)
-		b.timeMaximum = max(b.timeMaximum, r.nanoseconds)
-		b.TimeMinimum = min(b.TimeMinimum, r.nanoseconds)
-		inf.benchmarks[bench.name] = b
-	} else {
-		bench.runs = []run{r}
-		bench.timeMaximum = r.nanoseconds
-		bench.TimeMinimum = r.nanoseconds
-		inf.benchmarks[bench.name] = &bench
+	for _, b := range inf.benchmarks {
+		if b.name == bench.name {
+			b.runs = append(b.runs, r)
+			b.timeMaximum = max(b.timeMaximum, r.nanoseconds)
+			b.TimeMinimum = min(b.TimeMinimum, r.nanoseconds)
+			b.timeTotal += r.nanoseconds
+			return
+		}
 	}
+
+	bench.runs = []run{r}
+	bench.timeMaximum = r.nanoseconds
+	bench.TimeMinimum = r.nanoseconds
+	bench.timeTotal = r.nanoseconds
+	inf.benchmarks = append(inf.benchmarks, &bench)
 }
 
 func (bench *benchmark) Calc() {
@@ -153,9 +166,6 @@ func (bench *benchmark) Calc() {
 		return
 	}
 
-	for _, r := range bench.runs {
-		bench.timeTotal += r.nanoseconds
-	}
 	bench.timeAverage = bench.timeTotal / float64(len(bench.runs))
 }
 
@@ -200,4 +210,33 @@ func size(f uint64) (count int) {
 	}
 	count = int(math.Log10(float64(f))) + 1
 	return
+}
+
+func (inf *info) Sort(column uint8) {
+	switch column {
+	default: // SortNameAscending
+		sort.Slice(inf.benchmarks, func(i, j int) bool {
+			return inf.benchmarks[i].name < inf.benchmarks[j].name
+		})
+	case SortNameDescending:
+		sort.Slice(inf.benchmarks, func(i, j int) bool {
+			return inf.benchmarks[i].name > inf.benchmarks[j].name
+		})
+	case SortTimeAverage:
+		sort.Slice(inf.benchmarks, func(i, j int) bool {
+			return inf.benchmarks[i].timeAverage < inf.benchmarks[j].timeAverage
+		})
+	case SortTimeMaximum:
+		sort.Slice(inf.benchmarks, func(i, j int) bool {
+			return inf.benchmarks[i].timeMaximum < inf.benchmarks[j].timeMaximum
+		})
+	case SortTimeMinimum:
+		sort.Slice(inf.benchmarks, func(i, j int) bool {
+			return inf.benchmarks[i].TimeMinimum < inf.benchmarks[j].TimeMinimum
+		})
+	case SortTimeTotal:
+		sort.Slice(inf.benchmarks, func(i, j int) bool {
+			return inf.benchmarks[i].timeTotal < inf.benchmarks[j].timeTotal
+		})
+	}
 }

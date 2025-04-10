@@ -42,7 +42,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Println(benchtime.Calculate(string(stdin), *decimalPlaces))
+		fmt.Println(benchtime.Calculate(string(stdin), *decimalPlaces, benchtime.SortNameAscending))
 		return
 	}
 
@@ -61,7 +61,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println(benchtime.Calculate(string(src), *decimalPlaces))
+		fmt.Println(benchtime.Calculate(string(src), *decimalPlaces, benchtime.SortNameAscending))
 	}
 }
 
