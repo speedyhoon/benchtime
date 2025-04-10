@@ -41,7 +41,7 @@ func Calculate(benchmarkData string, decimalPlaces uint) string {
 		line = strings.TrimSpace(line)
 
 		switch {
-		case line == "":
+		case line == "", ignoreLine(line):
 			continue
 		case strings.HasPrefix(line, "goos: "):
 			inf.os = strings.TrimPrefix(line, "goos: ")
@@ -51,7 +51,6 @@ func Calculate(benchmarkData string, decimalPlaces uint) string {
 			inf.pkg = strings.TrimPrefix(line, "pkg: ")
 		case strings.HasPrefix(line, "cpu: "):
 			inf.cpu = strings.TrimPrefix(line, "cpu: ")
-		case ignoreLine(line):
 		default:
 			data := strings.Split(line, "  ")
 			var bench benchmark
