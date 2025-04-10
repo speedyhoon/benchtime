@@ -15,20 +15,17 @@ import (
 
 func main() {
 	version := flag.Bool("v", false, "Print version & exit.")
-	const decimalPlacesMax = 40
-	decimalPlaces := flag.Uint("d", 3, fmt.Sprintf("Decimal places. Maximum is %d.", decimalPlacesMax))
+	decimalPlaces := flag.Uint("d", benchtime.DecimalPlacesDefault, fmt.Sprintf("Decimal places. Maximum is %d.", benchtime.DecimalPlacesMax))
 	flag.Usage = func() {
-		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s: [files...]\n", os.Args[0])
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "benchtime summarises Go benchmark results into a table.\nUsage of %s: [files...]\n", os.Args[0])
 		flag.PrintDefaults()
-		_, _ = fmt.Fprintln(flag.CommandLine.Output(), "\nIf no files are specified as arguments then benchtime reads stdin for input.")
+		_, _ = fmt.Fprintln(flag.CommandLine.Output(), "\nIf no files are specified as arguments then benchtime reads stdin for input.\nUsage example:\n\tgo test -bench . -benchmem -count=30 -shuffle=on | benchtime")
 	}
 	flag.Parse()
 	if *version {
 		fmt.Println("0.3")
 		return
 	}
-
-	*decimalPlaces = min(*decimalPlaces, decimalPlacesMax)
 
 	paths := flag.Args()
 	if len(paths) == 0 {
@@ -42,7 +39,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Println(benchtime.Calculate(string(stdin), *decimalPlaces, benchtime.SortNameAscending))
+		fmt.Println(benchtime.Calculate(string(stdin), uint8(*decimalPlaces), benchtime.SortNameAscending))
 		return
 	}
 
@@ -61,7 +58,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println(benchtime.Calculate(string(src), *decimalPlaces, benchtime.SortNameAscending))
+		fmt.Println(benchtime.Calculate(string(src), uint8(*decimalPlaces), benchtime.SortNameAscending))
 	}
 }
 

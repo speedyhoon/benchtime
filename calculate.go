@@ -16,6 +16,9 @@ const (
 	SortTimeMaximum
 	SortTimeMinimum
 	SortTimeTotal
+
+	DecimalPlacesDefault = 3
+	DecimalPlacesMax     = 40
 )
 
 type info struct {
@@ -42,7 +45,9 @@ type run struct {
 	allocations uint64  // Allocations per operation.
 }
 
-func Calculate(benchmarkData string, decimalPlaces uint, sortColumn uint8) string {
+func Calculate(benchmarkData string, decimalPlaces, sortColumn uint8) string {
+	decimalPlaces = min(decimalPlaces, DecimalPlacesMax)
+
 	inf := info{benchmarks: []*benchmark{}}
 	var buf = bytes.NewBuffer(nil)
 	var maxNameLen int
