@@ -55,7 +55,7 @@ func main() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			stdin = append(stdin, scanner.Bytes()...)
-			stdin = append(stdin, byte('\n'))
+			stdin = append(stdin, '\n')
 		}
 		if err := scanner.Err(); err != nil {
 			log.Fatal(err)
