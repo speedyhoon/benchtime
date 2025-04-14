@@ -27,6 +27,7 @@ func main() {
 		_, _ = fmt.Fprintf(pflag.CommandLine.Output(), "benchtime summarises Go benchmark results into a table.\n\nUsage of %s: [files...]\n", os.Args[0])
 		pflag.PrintDefaults()
 		_, _ = fmt.Fprintln(pflag.CommandLine.Output(), "\nIf no files are specified as arguments then benchtime reads stdin for input.\nUsage example:\n\tgo test -bench . -benchmem -count=30 -shuffle=on | benchtime")
+		os.Exit(0)
 	}
 	pflag.Parse()
 	if *version {
