@@ -43,28 +43,47 @@ type run struct {
 	allocations uint64  // Allocations per operation.
 }
 
+var (
+	pfxLine             = []byte("\n")
+	pfxOS               = []byte("goos: ")
+	pfxArch             = []byte("goarch: ")
+	pfxPkg              = []byte("pkg: ")
+	pfxCPU              = []byte("cpu: ")
+	pfxBenchmark        = []byte("Benchmark")
+	pfxNanoPerOp        = []byte(" ns/op")
+	pfxBytesPerOp       = []byte(" " + ColBytesPerOp)
+	pfxAllocationsPerOp = []byte(" " + ColAllocationsPerOp)
+	pfx2Spaces          = []byte("  ")
+
+	// Ignore lines:
+	pfxPass         = []byte("PASS")
+	pfxOk           = []byte("ok ")
+	pfxShuffle      = []byte("-test.shuffle ")
+	pfxBenchmarking = []byte("Benchmarking ")
+)
+
 func Calculate(benchmarkData []byte, decimalPlaces, sortColumn uint8) string {
 	decimalPlaces = min(decimalPlaces, DecimalPlacesMax)
 
 	inf := info{benchmarks: []*benchmark{}}
 	var buf = bytes.NewBuffer(nil)
 	var maxNameLen int
-	for _, line := range bytes.Split(benchmarkData, []byte("\n")) {
+	for _, line := range bytes.Split(benchmarkData, pfxLine) {
 		line = bytes.TrimSpace(line)
 
 		switch {
 		case len(line) == 0, ignoreLine(line):
 			continue
-		case bytes.HasPrefix(line, []byte("goos: ")):
-			inf.os = string(bytes.TrimPrefix(line, []byte("goos: ")))
-		case bytes.HasPrefix(line, []byte("goarch: ")):
-			inf.arch = string(bytes.TrimPrefix(line, []byte("goarch: ")))
-		case bytes.HasPrefix(line, []byte("pkg: ")):
-			inf.pkg = string(bytes.TrimPrefix(line, []byte("pkg: ")))
-		case bytes.HasPrefix(line, []byte("cpu: ")):
-			inf.cpu = string(bytes.TrimPrefix(line, []byte("cpu: ")))
+		case bytes.HasPrefix(line, pfxOS):
+			inf.os = string(bytes.TrimPrefix(line, pfxOS))
+		case bytes.HasPrefix(line, pfxArch):
+			inf.arch = string(bytes.TrimPrefix(line, pfxArch))
+		case bytes.HasPrefix(line, pfxPkg):
+			inf.pkg = string(bytes.TrimPrefix(line, pfxPkg))
+		case bytes.HasPrefix(line, pfxCPU):
+			inf.cpu = string(bytes.TrimPrefix(line, pfxCPU))
 		default:
-			data := bytes.Split(line, []byte("  "))
+			data := bytes.Split(line, pfx2Spaces)
 			var bench benchmark
 			var r run
 			var err error
@@ -75,18 +94,18 @@ func Calculate(benchmarkData []byte, decimalPlaces, sortColumn uint8) string {
 				}
 
 				switch {
-				case bytes.HasPrefix(item, []byte("Benchmark")):
+				case bytes.HasPrefix(item, pfxBenchmark):
 					bench.name = string(item)
 					maxNameLen = max(maxNameLen, len(item))
 					err = nil
-				case bytes.HasSuffix(item, []byte(" ns/op")):
-					item = bytes.TrimSuffix(item, []byte(" ns/op"))
+				case bytes.HasSuffix(item, pfxNanoPerOp):
+					item = bytes.TrimSuffix(item, pfxNanoPerOp)
 					r.nanoseconds, err = strconv.ParseFloat(string(item), 64)
-				case bytes.HasSuffix(item, []byte(" B/op")):
-					item = bytes.TrimSuffix(item, []byte(" B/op"))
+				case bytes.HasSuffix(item, pfxBytesPerOp):
+					item = bytes.TrimSuffix(item, pfxBytesPerOp)
 					r.bytes, err = strconv.ParseUint(string(item), 10, 64)
-				case bytes.HasSuffix(item, []byte(" allocs/op")):
-					item = bytes.TrimSuffix(item, []byte(" allocs/op"))
+				case bytes.HasSuffix(item, pfxAllocationsPerOp):
+					item = bytes.TrimSuffix(item, pfxAllocationsPerOp)
 					r.allocations, err = strconv.ParseUint(string(item), 10, 64)
 				default:
 					r.runs, err = strconv.ParseUint(string(item), 10, 64)
@@ -104,7 +123,7 @@ func Calculate(benchmarkData []byte, decimalPlaces, sortColumn uint8) string {
 
 	var decimalWidth int
 	if decimalPlaces != 0 {
-		decimalWidth = int(decimalPlaces) + 1 // Add +1 for the width of the decimal points "."
+		decimalWidth = int(decimalPlaces) + 1 // Add +1 for the width of the decimal points `.`
 	}
 
 	c := columnWidths{
@@ -140,10 +159,10 @@ func Calculate(benchmarkData []byte, decimalPlaces, sortColumn uint8) string {
 }
 
 func ignoreLine(line []byte) bool {
-	return bytes.EqualFold(line, []byte("PASS")) ||
-		bytes.HasPrefix(line, []byte("ok ")) ||
-		bytes.HasPrefix(line, []byte("-test.shuffle ")) ||
-		bytes.HasPrefix(line, []byte("Benchmarking "))
+	return bytes.EqualFold(line, pfxPass) ||
+		bytes.HasPrefix(line, pfxOk) ||
+		bytes.HasPrefix(line, pfxShuffle) ||
+		bytes.HasPrefix(line, pfxBenchmarking)
 }
 
 func (inf *info) Add(bench benchmark, r run) {
