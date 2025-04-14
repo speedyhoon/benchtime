@@ -14,7 +14,7 @@ func TestCalculate(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		decimals uint
+		decimals uint8
 		expected string
 	}{
 		{decimals: 0, expected: `arch: amd64
@@ -71,7 +71,7 @@ func TestCalculate_NameDsc(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		decimals uint
+		decimals uint8
 		expected string
 	}{
 		{decimals: 0, expected: `arch: amd64

@@ -16,7 +16,6 @@ const (
 	SortTimeMaximum
 	SortTimeMinimum
 	SortTimeTotal
-
 	DecimalPlacesDefault = 3
 	DecimalPlacesMax     = 40
 )
