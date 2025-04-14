@@ -35,6 +35,20 @@ func main() {
 		return
 	}
 
+	sortColumn := benchtime.SortNameAscending
+	switch {
+	case *nameDesc:
+		sortColumn = benchtime.SortNameDescending
+	case *timeAverage:
+		sortColumn = benchtime.SortTimeAverage
+	case *timeMaximum:
+		sortColumn = benchtime.SortTimeMaximum
+	case *timeMinimum:
+		sortColumn = benchtime.SortTimeMinimum
+	case *timeTotal:
+		sortColumn = benchtime.SortTimeTotal
+	}
+
 	paths := pflag.Args()
 	if len(paths) == 0 {
 		var stdin []byte
@@ -47,21 +61,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		sortCol := benchtime.SortNameAscending
-		switch {
-		case *nameDesc:
-			sortCol = benchtime.SortNameDescending
-		case *timeAverage:
-			sortCol = benchtime.SortTimeAverage
-		case *timeMaximum:
-			sortCol = benchtime.SortTimeMaximum
-		case *timeMinimum:
-			sortCol = benchtime.SortTimeMinimum
-		case *timeTotal:
-			sortCol = benchtime.SortTimeTotal
-		}
-
-		fmt.Println(benchtime.Calculate(stdin, *decimalsQty, sortCol))
+		fmt.Println(benchtime.Calculate(stdin, *decimalsQty, sortColumn))
 		return
 	}
 
@@ -80,7 +80,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println(benchtime.Calculate(src, *decimalsQty, benchtime.SortNameAscending))
+		fmt.Println(benchtime.Calculate(src, *decimalsQty, sortColumn))
 	}
 }
 
