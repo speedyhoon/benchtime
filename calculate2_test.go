@@ -68,7 +68,7 @@ Benchmark23_Unmarshal_Jay-4       33.400     17.700     20.200      606.010     
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("decimals: %d", tt.decimals), func(t *testing.T) {
-			assert.Equal(t, tt.expected, Calculate(string(stdIn), tt.decimals, SortNameAscending))
+			assert.Equal(t, tt.expected, Calculate(stdIn, tt.decimals, SortNameAscending))
 		})
 	}
 }
@@ -133,7 +133,7 @@ Benchmark23_Marshal_Gob-4      32085.000  18190.000  20729.400   621882.000   27
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("decimals: %d", tt.decimals), func(t *testing.T) {
-			assert.Equal(t, tt.expected, Calculate(string(stdIn), tt.decimals, SortNameDescending))
+			assert.Equal(t, tt.expected, Calculate(stdIn, tt.decimals, SortNameDescending))
 		})
 	}
 }
@@ -198,7 +198,7 @@ Benchmark23_Unmarshal_Gob-4   155635.000  76386.000  89070.533  2672116.000  104
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("decimals: %d", tt.decimals), func(t *testing.T) {
-			assert.Equal(t, tt.expected, Calculate(string(stdIn), tt.decimals, SortTimeMaximum))
+			assert.Equal(t, tt.expected, Calculate(stdIn, tt.decimals, SortTimeMaximum))
 		})
 	}
 }

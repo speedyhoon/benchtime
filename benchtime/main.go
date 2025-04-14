@@ -30,7 +30,7 @@ func main() {
 	}
 	pflag.Parse()
 	if *version {
-		fmt.Println("0.3")
+		fmt.Println("0.4")
 		return
 	}
 
@@ -60,7 +60,7 @@ func main() {
 			sortCol = benchtime.SortTimeTotal
 		}
 
-		fmt.Println(benchtime.Calculate(string(stdin), *decimalsQty, sortCol))
+		fmt.Println(benchtime.Calculate(stdin, *decimalsQty, sortCol))
 		return
 	}
 
@@ -79,7 +79,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println(benchtime.Calculate(string(src), *decimalsQty, benchtime.SortNameAscending))
+		fmt.Println(benchtime.Calculate(src, *decimalsQty, benchtime.SortNameAscending))
 	}
 }
 

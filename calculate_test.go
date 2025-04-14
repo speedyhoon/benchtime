@@ -60,7 +60,7 @@ BenchmarkReadUint16sUnsafe2-2  197.900  53.740  70.502  2820.090     8          
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("decimals: %d", tt.decimals), func(t *testing.T) {
-			assert.Equal(t, tt.expected, Calculate(string(stdIn), tt.decimals, SortNameAscending))
+			assert.Equal(t, tt.expected, Calculate(stdIn, tt.decimals, SortNameAscending))
 		})
 	}
 }
@@ -117,7 +117,7 @@ BenchmarkReadUint16s-2          64.590  58.760  61.320  2452.810     8          
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("decimals: %d", tt.decimals), func(t *testing.T) {
-			assert.Equal(t, tt.expected, Calculate(string(stdIn), tt.decimals, SortNameDescending))
+			assert.Equal(t, tt.expected, Calculate(stdIn, tt.decimals, SortNameDescending))
 		})
 	}
 }

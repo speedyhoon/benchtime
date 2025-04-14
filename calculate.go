@@ -6,7 +6,6 @@ import (
 	"math"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -44,53 +43,53 @@ type run struct {
 	allocations uint64  // Allocations per operation.
 }
 
-func Calculate(benchmarkData string, decimalPlaces, sortColumn uint8) string {
+func Calculate(benchmarkData []byte, decimalPlaces, sortColumn uint8) string {
 	decimalPlaces = min(decimalPlaces, DecimalPlacesMax)
 
 	inf := info{benchmarks: []*benchmark{}}
 	var buf = bytes.NewBuffer(nil)
 	var maxNameLen int
-	for _, line := range strings.Split(benchmarkData, "\n") {
-		line = strings.TrimSpace(line)
+	for _, line := range bytes.Split(benchmarkData, []byte("\n")) {
+		line = bytes.TrimSpace(line)
 
 		switch {
-		case line == "", ignoreLine(line):
+		case len(line) == 0, ignoreLine(line):
 			continue
-		case strings.HasPrefix(line, "goos: "):
-			inf.os = strings.TrimPrefix(line, "goos: ")
-		case strings.HasPrefix(line, "goarch: "):
-			inf.arch = strings.TrimPrefix(line, "goarch: ")
-		case strings.HasPrefix(line, "pkg: "):
-			inf.pkg = strings.TrimPrefix(line, "pkg: ")
-		case strings.HasPrefix(line, "cpu: "):
-			inf.cpu = strings.TrimPrefix(line, "cpu: ")
+		case bytes.HasPrefix(line, []byte("goos: ")):
+			inf.os = string(bytes.TrimPrefix(line, []byte("goos: ")))
+		case bytes.HasPrefix(line, []byte("goarch: ")):
+			inf.arch = string(bytes.TrimPrefix(line, []byte("goarch: ")))
+		case bytes.HasPrefix(line, []byte("pkg: ")):
+			inf.pkg = string(bytes.TrimPrefix(line, []byte("pkg: ")))
+		case bytes.HasPrefix(line, []byte("cpu: ")):
+			inf.cpu = string(bytes.TrimPrefix(line, []byte("cpu: ")))
 		default:
-			data := strings.Split(line, "  ")
+			data := bytes.Split(line, []byte("  "))
 			var bench benchmark
 			var r run
 			var err error
 			for _, item := range data {
-				item = strings.TrimSpace(item)
-				if item == "" {
+				item = bytes.TrimSpace(item)
+				if len(item) == 0 {
 					continue
 				}
 
 				switch {
-				case strings.HasPrefix(item, "Benchmark"):
-					bench.name = item
+				case bytes.HasPrefix(item, []byte("Benchmark")):
+					bench.name = string(item)
 					maxNameLen = max(maxNameLen, len(item))
 					err = nil
-				case strings.HasSuffix(item, " ns/op"):
-					item = strings.TrimSuffix(item, " ns/op")
-					r.nanoseconds, err = strconv.ParseFloat(item, 64)
-				case strings.HasSuffix(item, " B/op"):
-					item = strings.TrimSuffix(item, " B/op")
-					r.bytes, err = strconv.ParseUint(item, 10, 64)
-				case strings.HasSuffix(item, " allocs/op"):
-					item = strings.TrimSuffix(item, " allocs/op")
-					r.allocations, err = strconv.ParseUint(item, 10, 64)
+				case bytes.HasSuffix(item, []byte(" ns/op")):
+					item = bytes.TrimSuffix(item, []byte(" ns/op"))
+					r.nanoseconds, err = strconv.ParseFloat(string(item), 64)
+				case bytes.HasSuffix(item, []byte(" B/op")):
+					item = bytes.TrimSuffix(item, []byte(" B/op"))
+					r.bytes, err = strconv.ParseUint(string(item), 10, 64)
+				case bytes.HasSuffix(item, []byte(" allocs/op")):
+					item = bytes.TrimSuffix(item, []byte(" allocs/op"))
+					r.allocations, err = strconv.ParseUint(string(item), 10, 64)
 				default:
-					r.runs, err = strconv.ParseUint(item, 10, 64)
+					r.runs, err = strconv.ParseUint(string(item), 10, 64)
 				}
 				if err != nil {
 					buf.WriteString(err.Error() + "\n")
@@ -140,11 +139,11 @@ func Calculate(benchmarkData string, decimalPlaces, sortColumn uint8) string {
 	return buf.String()
 }
 
-func ignoreLine(line string) bool {
-	return strings.EqualFold(line, "PASS") ||
-		strings.HasPrefix(line, "ok ") ||
-		strings.HasPrefix(line, "-test.shuffle ") ||
-		strings.HasPrefix(line, "Benchmarking ")
+func ignoreLine(line []byte) bool {
+	return bytes.EqualFold(line, []byte("PASS")) ||
+		bytes.HasPrefix(line, []byte("ok ")) ||
+		bytes.HasPrefix(line, []byte("-test.shuffle ")) ||
+		bytes.HasPrefix(line, []byte("Benchmarking "))
 }
 
 func (inf *info) Add(bench benchmark, r run) {
